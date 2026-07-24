@@ -68,7 +68,9 @@ with col_left:
     total_revenue = df_f['TOTAL.1'].sum()
     high_risk_stores = df_f[df_f['Risk Level'] == 'High']
     
-    st.write(f"""Laporan ini ditujukan sebagai acuan perencanaan audit tahun 2026 dengan total volume transaksi **Rp {total_revenue:,.0f}**. 
+    # Kalimat ringkasan data total yang ditambahkan
+    st.write(f"""Laporan ini mencakup analisis terhadap **{len(df_f)} unit kerja** sebagai acuan perencanaan audit tahun 2026, dengan total volume transaksi sebesar **Rp {total_revenue:,.0f}**. 
+    
     Ditemukan **{len(high_risk_stores)}** unit kerja berisiko tinggi (*High Risk*) dan **{len(df_f[df_f['Is_Anomaly'] == True])}** data anomali. 
     Direkomendasikan melakukan audit lapangan terfokus pada unit berisiko tinggi guna memastikan kepatuhan operasional.""")
     
@@ -84,6 +86,7 @@ with col_left:
 with col_right:
     st.subheader("Audit Workbench (Risk & Root Cause)")
     
+    # Tabel Risiko tetap dipertahankan
     def color_risk(val):
         color = '#e74c3c' if val == 'High' else '#f1c40f' if val == 'Medium' else '#2ecc71'
         return f'background-color: {color}; color: white'
@@ -94,7 +97,6 @@ with col_right:
         column_config={"Potential Root Cause": "Root Cause Finding"}
     )
     
-    # Tombol Download
     csv = df_f.to_csv(index=False).encode('utf-8')
     st.download_button("Download Laporan CSV", data=csv, file_name="branch_audit_plan_2026.csv")
 
