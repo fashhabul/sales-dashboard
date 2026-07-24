@@ -6,100 +6,85 @@ import matplotlib.pyplot as plt
 # 1. Konfigurasi Halaman (UX Enterprise)
 st.set_page_config(page_title="Operational Audit Dashboard", layout="wide")
 
-# Custom CSS untuk gaya "Power BI" (Card Style)
-st.markdown("""
-    <style>
-    div[data-testid="stMetricValue"] { font-size: 24px; color: #004d40; }
-    div[data-testid="stMetricLabel"] { font-size: 14px; color: #555; }
-    </style>
-""", unsafe_allow_html=True)
-
 # 2. Fungsi Load & Cleaning Data
 @st.cache_data
 def load_data():
     df = pd.read_csv('data.csv', sep=';')
-    
-    # Cleaning data yang robust
     numeric_cols = ['TOTAL.1', 'GOLD.1', 'SILVER.1']
     for col in numeric_cols:
         df[col] = pd.to_numeric(df[col].astype(str).str.replace('.', '').str.replace('-', '0'), errors='coerce')
         df[col] = df[col].fillna(0)
     
-    # Logika Audit: Benchmark sederhana
-    avg_perf = df['TOTAL.1'].mean()
-    df['Status'] = df['TOTAL.1'].apply(lambda x: '✅ Normal' if x >= avg_perf else '⚠️ Perlu Perhatian')
+    # Logika Risiko Audit
+    # High Risk = 20% terbawah, Medium = 20-50%, Low = Di atas itu
+    threshold_low = df['TOTAL.1'].quantile(0.2)
+    threshold_mid = df['TOTAL.1'].quantile(0.5)
+    
+    def assign_risk(val):
+        if val < threshold_low: return 'High'
+        elif val < threshold_mid: return 'Medium'
+        else: return 'Low'
+    
+    df['Risk Level'] = df['TOTAL.1'].apply(assign_risk)
     return df
 
 df = load_data()
 
-# 3. Sidebar (Slicer/Filter)
+# 3. Fungsi Formatting Warna untuk Tabel
+def color_risk_df(val):
+    if val == 'High': return 'background-color: #e74c3c; color: white' # Merah
+    elif val == 'Medium': return 'background-color: #f1c40f; color: black' # Kuning
+    else: return 'background-color: #2ecc71; color: white' # Hijau
+
+# 4. Sidebar (Slicer)
 st.sidebar.header("Filter & Slicer")
 branch_filter = st.sidebar.multiselect("Pilih Cabang:", options=df['BRANCH'].unique(), default=df['BRANCH'].unique())
-channel_filter = st.sidebar.multiselect("Pilih Channel:", options=df['CHANNEL TYPE'].unique(), default=df['CHANNEL TYPE'].unique())
-grade_filter = st.sidebar.multiselect("Pilih Grade:", options=df['GRADE STORE'].unique(), default=df['GRADE STORE'].unique())
+df_f = df[df['BRANCH'].isin(branch_filter)]
 
-# Terapkan Filter
-df_f = df[
-    (df['BRANCH'].isin(branch_filter)) & 
-    (df['CHANNEL TYPE'].isin(channel_filter)) & 
-    (df['GRADE STORE'].isin(grade_filter))
-]
-
-# 4. Main Dashboard UI
+# 5. Main Dashboard UI
 st.title("📊 Operational Audit Dashboard")
-st.markdown("Dashboard pemantauan kepatuhan dan performa operasional toko.")
 
-# KPI Metrics (5-Second Rule)
+# KPI Metrics
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Total Outstanding", f"Rp {df_f['TOTAL.1'].sum():,.0f}")
-col2.metric("Toko Aktif", f"{df_f['SITE ID'].nunique()}")
+col2.metric("High Risk Stores", len(df_f[df_f['Risk Level'] == 'High']))
 col3.metric("Avg Performance", f"Rp {df_f['TOTAL.1'].mean():,.0f}")
-col4.metric("Status Warning", f"{len(df_f[df_f['Status'] == '⚠️ Perlu Perhatian'])}")
+col4.metric("Status", "Monitoring")
 
 st.markdown("---")
 
-# 5. Tabs Layout
+# 6. Tabs Layout
 tab1, tab2, tab3 = st.tabs(["📊 Analisis Performa", "🔍 Audit Control & Anomaly", "📋 Raw Data"])
 
 with tab1:
     col_a, col_b = st.columns(2)
     with col_a:
         st.subheader("Tren Penjualan per Cabang")
-        # FIX: Menggunakan matplotlib agar grafik pasti muncul
         if not df_f.empty:
             chart_data = df_f.groupby('BRANCH')['TOTAL.1'].sum().reset_index()
             fig, ax = plt.subplots(figsize=(10, 5))
             ax.bar(chart_data['BRANCH'], chart_data['TOTAL.1'], color='#2e86c1')
             plt.xticks(rotation=45, ha='right')
-            plt.ylabel("Total Penjualan")
-            plt.tight_layout()
             st.pyplot(fig)
-        else:
-            st.warning("Data kosong untuk filter ini.")
-    
     with col_b:
-        st.subheader("Distribusi Status (Benchmark)")
-        if not df_f.empty:
-            status_count = df_f['Status'].value_counts()
-            fig, ax = plt.subplots()
-            status_count.plot(kind='pie', autopct='%1.1f%%', colors=['#2ecc71', '#e74c3c'], ax=ax)
-            st.pyplot(fig)
+        st.subheader("Distribusi Risiko Toko")
+        risk_count = df_f['Risk Level'].value_counts()
+        fig, ax = plt.subplots()
+        risk_count.plot(kind='pie', autopct='%1.1f%%', colors=['#2ecc71', '#f1c40f', '#e74c3c'], ax=ax)
+        st.pyplot(fig)
 
 with tab2:
-    st.subheader("Audit Findings & Correlation")
-    if not df_f.empty:
-        fig_heat, ax_heat = plt.subplots()
-        sns.heatmap(df_f[['GOLD.1', 'SILVER.1', 'TOTAL.1']].corr(), annot=True, cmap='coolwarm', ax=ax_heat)
-        st.pyplot(fig_heat)
+    st.subheader("Tabel Risiko Operasional")
+    st.write("Tabel ini menunjukkan toko dengan urgensi audit tinggi berdasarkan volume penjualan.")
     
-    st.subheader("Daftar Temuan (Anomaly Check)")
-    st.dataframe(df_f[['BRANCH', 'SITE NAME', 'TOTAL.1', 'Status']].sort_values(by='TOTAL.1'), use_container_width=True)
+    # Menampilkan tabel dengan warna
+    styled_df = df_f[['BRANCH', 'SITE NAME', 'TOTAL.1', 'Risk Level']].style.map(
+        color_risk_df, subset=['Risk Level']
+    )
+    st.dataframe(styled_df, use_container_width=True)
 
 with tab3:
     st.subheader("Raw Data Detail")
     st.dataframe(df_f, use_container_width=True)
     csv = df_f.to_csv(index=False).encode('utf-8')
     st.download_button("Download Laporan CSV", data=csv, file_name="audit_report.csv", mime="text/csv")
-
-st.sidebar.markdown("---")
-st.sidebar.write("Last Update: 2026-07-24")
