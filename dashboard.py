@@ -68,7 +68,6 @@ with col_left:
     total_revenue = df_f['TOTAL.1'].sum()
     high_risk_stores = df_f[df_f['Risk Level'] == 'High']
     
-    # Menggunakan st.markdown agar formatting **bold** dan *italic* terbaca dengan benar
     st.markdown(f"""
     Laporan ini mencakup analisis terhadap **{len(df_f)} unit kerja** sebagai acuan perencanaan audit tahun 2026, dengan total volume transaksi sebesar **Rp {total_revenue:,.0f}**. 
     
@@ -87,6 +86,8 @@ with col_left:
 
 with col_right:
     st.subheader("Audit Workbench (Risk & Root Cause)")
+    # Deskripsi tabel risiko yang ditambahkan
+    st.write("Tabel pemetaan risiko ini digunakan untuk mengidentifikasi prioritas audit berdasarkan tingkat *Risk Level*. Kolom *Root Cause Finding* berfungsi sebagai indikator awal untuk mempermudah investigasi akar masalah.")
     
     # Tabel Risiko
     def color_risk(val):
