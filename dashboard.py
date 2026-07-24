@@ -68,11 +68,13 @@ with col_left:
     total_revenue = df_f['TOTAL.1'].sum()
     high_risk_stores = df_f[df_f['Risk Level'] == 'High']
     
-    # Kalimat ringkasan data total yang ditambahkan
-    st.write(f"""Laporan ini mencakup analisis terhadap **{len(df_f)} unit kerja** sebagai acuan perencanaan audit tahun 2026, dengan total volume transaksi sebesar **Rp {total_revenue:,.0f}**. 
+    # Menggunakan st.markdown agar formatting **bold** dan *italic* terbaca dengan benar
+    st.markdown(f"""
+    Laporan ini mencakup analisis terhadap **{len(df_f)} unit kerja** sebagai acuan perencanaan audit tahun 2026, dengan total volume transaksi sebesar **Rp {total_revenue:,.0f}**. 
     
     Ditemukan **{len(high_risk_stores)}** unit kerja berisiko tinggi (*High Risk*) dan **{len(df_f[df_f['Is_Anomaly'] == True])}** data anomali. 
-    Direkomendasikan melakukan audit lapangan terfokus pada unit berisiko tinggi guna memastikan kepatuhan operasional.""")
+    Direkomendasikan melakukan audit lapangan terfokus pada unit berisiko tinggi guna memastikan kepatuhan operasional.
+    """)
     
     st.subheader("Tren Penjualan per Cabang")
     if not df_f.empty:
@@ -86,7 +88,7 @@ with col_left:
 with col_right:
     st.subheader("Audit Workbench (Risk & Root Cause)")
     
-    # Tabel Risiko tetap dipertahankan
+    # Tabel Risiko
     def color_risk(val):
         color = '#e74c3c' if val == 'High' else '#f1c40f' if val == 'Medium' else '#2ecc71'
         return f'background-color: {color}; color: white'
