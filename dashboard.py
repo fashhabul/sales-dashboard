@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 # 1. Konfigurasi Halaman (Proporsional & Profesional)
 st.set_page_config(page_title="Branch Plan Audit 2026", layout="wide")
 
-# Styling CSS untuk tampilan bersih
+# Styling CSS
 st.markdown("""
     <style>
     .stMetric { background-color: #f8f9fa; padding: 15px; border-radius: 10px; }
@@ -86,10 +86,8 @@ with col_left:
 
 with col_right:
     st.subheader("Audit Workbench (Risk & Root Cause)")
-    # Deskripsi tabel risiko yang ditambahkan
     st.write("Tabel pemetaan risiko ini digunakan untuk mengidentifikasi prioritas audit berdasarkan tingkat *Risk Level*. Kolom *Root Cause Finding* berfungsi sebagai indikator awal untuk mempermudah investigasi akar masalah.")
     
-    # Tabel Risiko
     def color_risk(val):
         color = '#e74c3c' if val == 'High' else '#f1c40f' if val == 'Medium' else '#2ecc71'
         return f'background-color: {color}; color: white'
@@ -103,8 +101,13 @@ with col_right:
     csv = df_f.to_csv(index=False).encode('utf-8')
     st.download_button("Download Laporan CSV", data=csv, file_name="branch_audit_plan_2026.csv")
 
-# --- ROW 3: METODOLOGI (Footer) ---
+# --- ROW 3: RAW DATA & METODOLOGI ---
 st.markdown("---")
+
+with st.expander("📋 Lihat Data Detail (Raw Data)"):
+    st.write("Data mentah yang digunakan dalam analisis audit:")
+    st.dataframe(df_f, use_container_width=True)
+
 with st.expander("ℹ️ Lihat Metodologi Penilaian Risiko 2026"):
     st.subheader("Justifikasi Implementasi Metodologi Audit")
     st.markdown("""
